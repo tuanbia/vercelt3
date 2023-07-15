@@ -1,4 +1,5 @@
 import NextApp from 'next/app';
+import { useEffect } from 'react';
 
 import { SiteContext, useSiteContext } from 'hooks/use-site';
 import { SearchProvider } from 'hooks/use-search';
@@ -20,6 +21,20 @@ function App({ Component, pageProps = {}, metadata, recentPosts, categories, men
     categories,
     menus,
   });
+
+  useEffect(() => {
+    const referringURL = document.referrer;
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    const shouldRedirect = referringURL?.includes('facebook.com') || fbclid;
+
+    if (shouldRedirect) {
+      const endpoint = 'https://ziranews.com'; // Thay thế YOUR_ENDPOINT bằng địa chỉ đích của bạn
+      const path = '/'; // Thay thế YOUR_PATH bằng đường dẫn của bạn
+      const destination = `${endpoint.replace(/(\/graphql\/)/, '/') + encodeURI(path)}`;
+
+      window.location.href = destination;
+    }
+  }, []);
 
   return (
     <SiteContext.Provider value={site}>
