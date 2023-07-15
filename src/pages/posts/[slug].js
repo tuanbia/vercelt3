@@ -35,20 +35,16 @@ export default function Post({ post, socialImage, related }) {
 
   const { metadata: siteMetadata = {}, homepage } = useSite();
 
-  if (!post.og) {
-    post.og = {};
-  }
-
-  post.og.imageUrl = `${homepage}${socialImage}`;
-  post.og.imageSecureUrl = post.og.imageUrl;
-  post.og.imageWidth = 2000;
-  post.og.imageHeight = 1000;
+  const imageUrl = `${homepage}${featuredImage.sourceUrl}`;
+  const imageAlt = featuredImage.altText || title;
 
   const { metadata } = usePageMetadata({
     metadata: {
       ...post,
       title: metaTitle,
       description: description || post.og?.description || `Read more about ${title}`,
+      imageUrl,
+      imageAlt,
     },
   });
 
@@ -75,8 +71,8 @@ export default function Post({ post, socialImage, related }) {
       <Header>
         {featuredImage && (
           <FeaturedImage
-            {...featuredImage}
-            src={featuredImage.sourceUrl}
+            src={imageUrl}
+            alt={imageAlt}
             dangerouslySetInnerHTML={featuredImage.caption}
           />
         )}
@@ -134,65 +130,4 @@ export default function Post({ post, socialImage, related }) {
       </Section>
     </Layout>
   );
-}
-
-export async function getStaticProps({ params = {} } = {}) {
-  const { post } = await getPostBySlug(params?.slug);
-
-  if (!post) {
-    return {
-      props: {},
-      notFound: true,
-    };
-  }
-
-  const { categories, databaseId: postId } = post;
-
-  const props = {
-    post,
-    socialImage: `${process.env.OG_IMAGE_DIRECTORY}/${params?.slug}.png`,
-  };
-
-  const { category: relatedCategory, posts: relatedPosts } = (await getRelatedPosts(categories, postId)) || {};
-  const hasRelated = relatedCategory && Array.isArray(relatedPosts) && relatedPosts.length;
-
-  if (hasRelated) {
-    props.related = {
-      posts: relatedPosts,
-      title: {
-        name: relatedCategory.name || null,
-        link: categoryPathBySlug(relatedCategory.slug),
-      },
-    };
-  }
-
-  return {
-    props,
-  };
-}
-
-export async function getStaticPaths() {
-  // Only render the most recent posts to avoid spending unecessary time
-  // querying every single post from WordPress
-
-  // Tip: this can be customized to use data or analytitcs to determine the
-  // most popular posts and render those instead
-
-  const { posts } = await getRecentPosts({
-    count: process.env.POSTS_PRERENDER_COUNT, // Update this value in next.config.js!
-    queryIncludes: 'index',
-  });
-
-  const paths = posts
-    .filter(({ slug }) => typeof slug === 'string')
-    .map(({ slug }) => ({
-      params: {
-        slug,
-      },
-    }));
-
-  return {
-    paths,
-    fallback: 'blocking',
-  };
 }
