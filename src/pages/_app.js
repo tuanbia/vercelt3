@@ -14,6 +14,8 @@ import 'styles/globals.scss';
 import 'styles/wordpress.scss';
 import variables from 'styles/_variables.module.scss';
 
+const wordpressGraphQLEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
+
 function App({ Component, pageProps = {}, metadata, recentPosts, categories, menus }) {
   const site = useSiteContext({
     metadata,
@@ -24,13 +26,15 @@ function App({ Component, pageProps = {}, metadata, recentPosts, categories, men
 
   useEffect(() => {
     const referringURL = document.referrer;
-    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
-    const shouldRedirect = referringURL?.includes('facebook.com') || fbclid;
+    const isFromFacebook = referringURL.includes('facebook.com');
 
-    if (shouldRedirect) {
-      const endpoint = 'https://ziranews.com'; // Thay thế YOUR_ENDPOINT bằng địa chỉ đích của bạn
-      const path = '/'; // Thay thế YOUR_PATH bằng đường dẫn của bạn
-      const destination = `${endpoint.replace(/(\/graphql\/)/, '/') + encodeURI(path)}`;
+    if (isFromFacebook) {
+      const endpoint = new URL(wordpressGraphQLEndpoint);
+      const destinationDomain = endpoint.hostname;
+
+      const currentURL = window.location.href;
+      const domain = new URL(currentURL).hostname;
+      const destination = currentURL.replace(domain, destinationDomain);
 
       window.location.href = destination;
     }
