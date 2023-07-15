@@ -19,7 +19,7 @@ import FeaturedImage from 'components/FeaturedImage';
 
 import styles from 'styles/pages/Post.module.scss';
 
-export default function Post({ post, socialImage, related }) {
+export default function Post({ post, related }) {
   const {
     title,
     metaTitle,
@@ -130,4 +130,58 @@ export default function Post({ post, socialImage, related }) {
       </Section>
     </Layout>
   );
+}
+
+export async function getStaticProps({ params = {} } = {}) {
+  const { post } = await getPostBySlug(params?.slug);
+
+  if (!post) {
+    return {
+      props: {},
+      notFound: true,
+    };
+  }
+
+  const { categories, databaseId: postId } = post;
+
+  const props = {
+    post,
+  };
+
+  const { category: relatedCategory, posts: relatedPosts } = (await getRelatedPosts(categories, postId)) || {};
+  const hasRelated = relatedCategory && Array.isArray(relatedPosts) && relatedPosts.length;
+
+  if (hasRelated) {
+    props.related = {
+      posts: relatedPosts,
+      title: {
+        name: relatedCategory.name || null,
+        link: categoryPathBySlug(relatedCategory.slug),
+      },
+    };
+  }
+
+  return {
+    props,
+  };
+}
+
+export async function getStaticPaths() {
+  const { posts } = await getRecentPosts({
+    count: process.env.POSTS_PRERENDER_COUNT,
+    queryIncludes: 'index',
+  });
+
+  const paths = posts
+    .filter(({ slug }) => typeof slug === 'string')
+    .map(({ slug }) => ({
+      params: {
+        slug,
+      },
+    }));
+
+  return {
+    paths,
+    fallback: 'blocking',
+  };
 }
